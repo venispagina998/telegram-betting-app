@@ -4,6 +4,9 @@ import WebApp from '@twa-dev/sdk';
 // Создаем экземпляр axios с базовой конфигурацией
 const instance = axios.create({
   baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8000',
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
 // Добавляем перехватчик для добавления данных аутентификации
@@ -23,10 +26,7 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      // Если ошибка аутентификации, показываем сообщение пользователю
-      WebApp.showAlert('Ошибка аутентификации. Пожалуйста, попробуйте снова.');
-    }
+    console.error('API Error:', error.response?.data || error.message);
     return Promise.reject(error);
   }
 );

@@ -41,18 +41,63 @@ const AdminPanel = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const probabilities = JSON.parse(eventData.probabilities);
-      if (Object.values(probabilities).reduce((a, b) => a + b, 0) !== 100) {
-        alert('Сумма вероятностей должна быть равна 100%');
+      // Проверяем, что все поля заполнены
+      if (!eventData.title || !eventData.description || !eventData.outcomes || !eventData.probabilities) {
+        setSnackbar({
+          open: true,
+          message: 'Пожалуйста, заполните все поля',
+          severity: 'error'
+        });
         return;
       }
+
+      // Проверяем, что время окончания позже времени начала
+      if (eventData.end_time <= eventData.start_time) {
+        setSnackbar({
+          open: true,
+          message: 'Время окончания должно быть позже времени начала',
+          severity: 'error'
+        });
+        return;
+      }
+
+      const probabilities = JSON.parse(eventData.probabilities);
+      if (Object.values(probabilities).reduce((a, b) => a + b, 0) !== 100) {
+        setSnackbar({
+          open: true,
+          message: 'Сумма вероятностей должна быть равна 100%',
+          severity: 'error'
+        });
+        return;
+      }
+
+      // Проверяем, что количество исходов совпадает с количеством вероятностей
+      const outcomes = eventData.outcomes.split(',').map(o => o.trim());
+      if (outcomes.length !== Object.keys(probabilities).length) {
+        setSnackbar({
+          open: true,
+          message: 'Количество исходов должно совпадать с количеством вероятностей',
+          severity: 'error'
+        });
+        return;
+      }
+
+      console.log('Отправка данных:', {
+        ...eventData,
+        created_by: WebApp.initDataUnsafe.user.id,
+        outcomes: JSON.stringify(outcomes),
+        probabilities: JSON.stringify(probabilities),
+      });
+
       const response = await axios.post('/events/', {
         ...eventData,
         created_by: WebApp.initDataUnsafe.user.id,
-        outcomes: JSON.stringify(eventData.outcomes.split(',').map(o => o.trim())),
+        outcomes: JSON.stringify(outcomes),
         probabilities: JSON.stringify(probabilities),
       });
-      console.log('Событие создано:', response.data);
+
+      console.log('Ответ сервера:', response.data);
+      
       // Сброс формы
       setEventData({
         title: '',
@@ -62,6 +107,7 @@ const AdminPanel = () => {
         outcomes: '',
         probabilities: '',
       });
+
       setSnackbar({
         open: true,
         message: 'Событие успешно создано',
@@ -69,9 +115,18 @@ const AdminPanel = () => {
       });
     } catch (error) {
       console.error('Ошибка при создании события:', error);
+      console.error('Детали ошибки:', error.response?.data);
+      
+      let errorMessage = 'Ошибка при создании события';
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+
       setSnackbar({
         open: true,
-        message: 'Ошибка при создании события',
+        message: errorMessage,
         severity: 'error'
       });
     }
