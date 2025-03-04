@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { LocalizationProvider } from '@mui/x-date-pickers';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import WebApp from '@twa-dev/sdk';
 import EventsList from './components/EventsList';
 import EventDetails from './components/EventDetails';
@@ -86,18 +88,20 @@ const theme = createTheme({
 function App() {
   return (
     <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <div className="App">
-          <Navigation />
-          <Routes>
-            <Route path="/" element={<EventsList />} />
-            <Route path="/event/:id" element={<EventDetails />} />
-            <Route path="/bet/:eventId" element={<PlaceBet />} />
-            <Route path="/admin" element={<AdminPanel />} />
-          </Routes>
-        </div>
-      </Router>
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <CssBaseline />
+        <Router>
+          <div className="App">
+            <Navigation />
+            <Routes>
+              <Route path="/" element={<EventsList />} />
+              <Route path="/event/:id" element={<EventDetails />} />
+              <Route path="/bet/:eventId" element={<PlaceBet />} />
+              <Route path="/admin" element={<AdminPanel />} />
+            </Routes>
+          </div>
+        </Router>
+      </LocalizationProvider>
     </ThemeProvider>
   );
 }
