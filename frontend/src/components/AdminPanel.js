@@ -136,14 +136,14 @@ const AdminPanel = () => {
       const requestData = {
         ...eventData,
         created_by: userId,
-        outcomes: JSON.stringify(outcomes.map(o => o.name)),
-        probabilities: JSON.stringify(probabilities),
+        outcomes: outcomes.map(o => o.name),
+        probabilities: probabilities,
       };
 
       console.log('Подготовленные данные для отправки:', requestData);
       console.log('User ID:', userId);
-      console.log('Исходы (JSON):', JSON.stringify(outcomes.map(o => o.name)));
-      console.log('Вероятности (JSON):', JSON.stringify(probabilities));
+      console.log('Исходы:', outcomes.map(o => o.name));
+      console.log('Вероятности:', probabilities);
 
       try {
         const response = await axios.post('/events/', requestData);
