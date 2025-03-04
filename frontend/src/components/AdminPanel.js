@@ -32,7 +32,6 @@ const AdminPanel = () => {
     description: '',
     start_time: new Date(),
     end_time: new Date(),
-    outcomes: '',
   });
 
   const [outcomes, setOutcomes] = useState([
@@ -49,10 +48,10 @@ const AdminPanel = () => {
     e.preventDefault();
     try {
       // Проверяем, что все поля заполнены
-      if (!eventData.title || !eventData.description || !eventData.outcomes) {
+      if (!eventData.title || !eventData.description) {
         setSnackbar({
           open: true,
-          message: 'Пожалуйста, заполните все поля',
+          message: 'Пожалуйста, заполните название и описание события',
           severity: 'error'
         });
         return;
@@ -117,7 +116,6 @@ const AdminPanel = () => {
         description: '',
         start_time: new Date(),
         end_time: new Date(),
-        outcomes: '',
       });
       setOutcomes([{ name: '', probability: '' }]);
 
