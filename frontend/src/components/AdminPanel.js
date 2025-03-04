@@ -17,8 +17,12 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  IconButton,
+  InputAdornment,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from '@mui/icons-material/Add';
 import axios from '../utils/axios';
 import WebApp from '@twa-dev/sdk';
 
@@ -29,8 +33,11 @@ const AdminPanel = () => {
     start_time: new Date(),
     end_time: new Date(),
     outcomes: '',
-    probabilities: '',
   });
+
+  const [outcomes, setOutcomes] = useState([
+    { name: '', probability: '' }
+  ]);
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -42,7 +49,7 @@ const AdminPanel = () => {
     e.preventDefault();
     try {
       // Проверяем, что все поля заполнены
-      if (!eventData.title || !eventData.description || !eventData.outcomes || !eventData.probabilities) {
+      if (!eventData.title || !eventData.description || !eventData.outcomes) {
         setSnackbar({
           open: true,
           message: 'Пожалуйста, заполните все поля',
@@ -61,8 +68,19 @@ const AdminPanel = () => {
         return;
       }
 
-      const probabilities = JSON.parse(eventData.probabilities);
-      if (Object.values(probabilities).reduce((a, b) => a + b, 0) !== 100) {
+      // Проверяем, что все исходы и вероятности заполнены
+      if (outcomes.some(outcome => !outcome.name || !outcome.probability)) {
+        setSnackbar({
+          open: true,
+          message: 'Пожалуйста, заполните все исходы и их вероятности',
+          severity: 'error'
+        });
+        return;
+      }
+
+      // Проверяем, что сумма вероятностей равна 100
+      const totalProbability = outcomes.reduce((sum, outcome) => sum + Number(outcome.probability), 0);
+      if (totalProbability !== 100) {
         setSnackbar({
           open: true,
           message: 'Сумма вероятностей должна быть равна 100%',
@@ -71,28 +89,23 @@ const AdminPanel = () => {
         return;
       }
 
-      // Проверяем, что количество исходов совпадает с количеством вероятностей
-      const outcomes = eventData.outcomes.split(',').map(o => o.trim());
-      if (outcomes.length !== Object.keys(probabilities).length) {
-        setSnackbar({
-          open: true,
-          message: 'Количество исходов должно совпадать с количеством вероятностей',
-          severity: 'error'
-        });
-        return;
-      }
+      // Формируем объект вероятностей
+      const probabilities = outcomes.reduce((acc, outcome) => {
+        acc[outcome.name] = Number(outcome.probability);
+        return acc;
+      }, {});
 
       console.log('Отправка данных:', {
         ...eventData,
         created_by: WebApp.initDataUnsafe.user.id,
-        outcomes: JSON.stringify(outcomes),
+        outcomes: JSON.stringify(outcomes.map(o => o.name)),
         probabilities: JSON.stringify(probabilities),
       });
 
       const response = await axios.post('/events/', {
         ...eventData,
         created_by: WebApp.initDataUnsafe.user.id,
-        outcomes: JSON.stringify(outcomes),
+        outcomes: JSON.stringify(outcomes.map(o => o.name)),
         probabilities: JSON.stringify(probabilities),
       });
 
@@ -105,8 +118,8 @@ const AdminPanel = () => {
         start_time: new Date(),
         end_time: new Date(),
         outcomes: '',
-        probabilities: '',
       });
+      setOutcomes([{ name: '', probability: '' }]);
 
       setSnackbar({
         open: true,
@@ -141,6 +154,21 @@ const AdminPanel = () => {
       ...prev,
       [field]: date
     }));
+  };
+
+  const handleOutcomeChange = (index, field, value) => {
+    const newOutcomes = [...outcomes];
+    newOutcomes[index] = { ...newOutcomes[index], [field]: value };
+    setOutcomes(newOutcomes);
+  };
+
+  const addOutcome = () => {
+    setOutcomes([...outcomes, { name: '', probability: '' }]);
+  };
+
+  const removeOutcome = (index) => {
+    const newOutcomes = outcomes.filter((_, i) => i !== index);
+    setOutcomes(newOutcomes);
   };
 
   const handleCloseSnackbar = () => {
@@ -204,28 +232,57 @@ const AdminPanel = () => {
                   renderInput={(params) => <TextField {...params} fullWidth required />}
                 />
               </Grid>
+              
+              {/* Исходы и вероятности */}
               <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Возможные исходы (через запятую)"
-                  name="outcomes"
-                  value={eventData.outcomes}
-                  onChange={handleChange}
-                  required
-                  helperText="Например: Победа, Ничья, Поражение"
-                />
+                <Typography variant="h6" gutterBottom>
+                  Исходы и вероятности
+                </Typography>
+                {outcomes.map((outcome, index) => (
+                  <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
+                    <Grid item xs={5}>
+                      <TextField
+                        fullWidth
+                        label={`Исход ${index + 1}`}
+                        value={outcome.name}
+                        onChange={(e) => handleOutcomeChange(index, 'name', e.target.value)}
+                        required
+                      />
+                    </Grid>
+                    <Grid item xs={5}>
+                      <TextField
+                        fullWidth
+                        label="Вероятность"
+                        type="number"
+                        value={outcome.probability}
+                        onChange={(e) => handleOutcomeChange(index, 'probability', e.target.value)}
+                        required
+                        InputProps={{
+                          endAdornment: <InputAdornment position="end">%</InputAdornment>,
+                        }}
+                      />
+                    </Grid>
+                    <Grid item xs={2}>
+                      <IconButton 
+                        onClick={() => removeOutcome(index)}
+                        disabled={outcomes.length === 1}
+                        color="error"
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Grid>
+                  </Grid>
+                ))}
+                <Button
+                  startIcon={<AddIcon />}
+                  onClick={addOutcome}
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                >
+                  Добавить исход
+                </Button>
               </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  label="Вероятности (в формате JSON)"
-                  name="probabilities"
-                  value={eventData.probabilities}
-                  onChange={handleChange}
-                  required
-                  helperText='Например: {"Победа": 40, "Ничья": 30, "Поражение": 30}'
-                />
-              </Grid>
+
               <Grid item xs={12}>
                 <Button
                   type="submit"
