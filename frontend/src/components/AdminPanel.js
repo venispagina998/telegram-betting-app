@@ -118,7 +118,11 @@ const AdminPanel = () => {
       const probabilities = {};
       outcomes.forEach(outcome => {
         if (outcome.name && outcome.probability) {
-          probabilities[String(outcome.name).trim()] = parseInt(outcome.probability, 10);
+          const name = String(outcome.name).trim();
+          const probability = parseInt(outcome.probability, 10);
+          if (!isNaN(probability)) {
+            probabilities[name] = probability;
+          }
         }
       });
 
@@ -131,7 +135,7 @@ const AdminPanel = () => {
         userId = WebApp.initDataUnsafe.user.id;
       } catch (error) {
         console.log('Не удалось получить ID пользователя из Telegram, используем тестовый ID');
-        userId = 123; // Временное решение для тестирования - используем числовой ID
+        userId = 123;
       }
 
       // Формируем данные для отправки
@@ -140,34 +144,24 @@ const AdminPanel = () => {
         description: String(eventData.description).trim(),
         start_time: eventData.start_time.toISOString(),
         end_time: eventData.end_time.toISOString(),
-        created_by: typeof userId === 'string' ? parseInt(userId, 10) : userId,
+        created_by: userId,
         outcomes: outcomes
           .filter(o => o.name)
           .map(o => String(o.name).trim())
           .join(','),
-        probabilities: probabilities
+        probabilities
       };
 
-      // Проверяем типы данных перед отправкой
-      console.log('Подготовленные данные для отправки:', {
-        ...requestData,
-        типы: {
-          title: typeof requestData.title,
-          description: typeof requestData.description,
-          start_time: typeof requestData.start_time,
-          end_time: typeof requestData.end_time,
-          created_by: typeof requestData.created_by,
-          outcomes: typeof requestData.outcomes,
-          probabilities: Object.entries(requestData.probabilities).map(([k, v]) => `${k}: ${typeof v}`)
-        }
+      // Подробное логирование
+      console.log('=== Отправляемые данные ===');
+      Object.entries(requestData).forEach(([key, value]) => {
+        console.log(`${key}:`, value, `(${typeof value})`);
       });
-      console.log('User ID:', userId);
-      console.log('Исходы:', outcomes.map(o => o.name));
-      console.log('Вероятности:', probabilities);
+      console.log('JSON данных:', JSON.stringify(requestData, null, 2));
 
       try {
         const response = await axios.post('/events/', requestData);
-        console.log('Ответ сервера:', response.data);
+        console.log('Успешный ответ:', response.data);
         
         // Сброс формы
         setEventData({
@@ -184,7 +178,21 @@ const AdminPanel = () => {
           severity: 'success'
         });
       } catch (axiosError) {
-        console.error('Ошибка axios:', axiosError);
+        console.error('=== Ошибка при отправке запроса ===');
+        console.error('Статус ошибки:', axiosError.response?.status);
+        console.error('Данные ошибки:', axiosError.response?.data);
+        
+        if (axiosError.response?.status === 500) {
+          console.error('Серверная ошибка:', axiosError.response?.data);
+          console.error('Отправленные данные:', JSON.stringify(requestData, null, 2));
+          setSnackbar({
+            open: true,
+            message: 'Произошла ошибка на сервере. Пожалуйста, проверьте формат данных и попробуйте снова.',
+            severity: 'error'
+          });
+          return;
+        }
+
         if (axiosError.response?.data?.detail) {
           console.error('Детали ошибки:', JSON.stringify(axiosError.response.data.detail, null, 2));
           if (Array.isArray(axiosError.response.data.detail)) {
@@ -197,8 +205,7 @@ const AdminPanel = () => {
             });
           }
         }
-        console.error('Отправленные данные:', JSON.stringify(requestData, null, 2));
-        
+
         let errorMessage = 'Ошибка при создании события';
         if (axiosError.response?.data?.detail) {
           if (Array.isArray(axiosError.response.data.detail)) {
