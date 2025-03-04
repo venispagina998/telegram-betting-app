@@ -131,7 +131,7 @@ const AdminPanel = () => {
         userId = WebApp.initDataUnsafe.user.id;
       } catch (error) {
         console.log('Не удалось получить ID пользователя из Telegram, используем тестовый ID');
-        userId = 'test_user_123'; // Временное решение для тестирования
+        userId = 123; // Временное решение для тестирования - используем числовой ID
       }
 
       // Формируем данные для отправки
@@ -140,13 +140,14 @@ const AdminPanel = () => {
         description: String(eventData.description).trim(),
         start_time: eventData.start_time.toISOString(),
         end_time: eventData.end_time.toISOString(),
-        created_by: String(userId),
+        created_by: typeof userId === 'string' ? parseInt(userId, 10) : userId,
         outcomes: outcomes
           .filter(o => o.name)
           .map(o => String(o.name).trim()),
         probabilities: probabilities
       };
 
+      // Проверяем типы данных перед отправкой
       console.log('Подготовленные данные для отправки:', {
         ...requestData,
         типы: {
@@ -155,7 +156,7 @@ const AdminPanel = () => {
           start_time: typeof requestData.start_time,
           end_time: typeof requestData.end_time,
           created_by: typeof requestData.created_by,
-          outcomes: `array[${requestData.outcomes.length}]`,
+          outcomes: `array[${requestData.outcomes.length}] of strings`,
           probabilities: Object.entries(requestData.probabilities).map(([k, v]) => `${k}: ${typeof v}`)
         }
       });
