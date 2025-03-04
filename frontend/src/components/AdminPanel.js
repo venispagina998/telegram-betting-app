@@ -14,10 +14,12 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import axios from 'axios';
+import axios from '../utils/axios';
 import WebApp from '@twa-dev/sdk';
 
 const AdminPanel = () => {
@@ -35,17 +37,17 @@ const AdminPanel = () => {
     try {
       const probabilities = JSON.parse(eventData.probabilities);
       if (Object.values(probabilities).reduce((a, b) => a + b, 0) !== 100) {
-        alert('Probabilities must sum to 100');
+        alert('Сумма вероятностей должна быть равна 100%');
         return;
       }
-      const response = await axios.post('http://localhost:8000/events/', {
+      const response = await axios.post('/events/', {
         ...eventData,
         created_by: WebApp.initDataUnsafe.user.id,
         outcomes: JSON.stringify(eventData.outcomes.split(',').map(o => o.trim())),
         probabilities: JSON.stringify(probabilities),
       });
-      console.log('Event created:', response.data);
-      // Reset form
+      console.log('Событие создано:', response.data);
+      // Сброс формы
       setEventData({
         title: '',
         description: '',
@@ -54,8 +56,18 @@ const AdminPanel = () => {
         outcomes: '',
         probabilities: '',
       });
+      setSnackbar({
+        open: true,
+        message: 'Событие успешно создано',
+        severity: 'success'
+      });
     } catch (error) {
-      console.error('Error creating event:', error);
+      console.error('Ошибка при создании события:', error);
+      setSnackbar({
+        open: true,
+        message: 'Ошибка при создании события',
+        severity: 'error'
+      });
     }
   };
 
@@ -70,10 +82,24 @@ const AdminPanel = () => {
     }));
   };
 
+  const handleCloseSnackbar = () => {
+    setSnackbar({ ...snackbar, open: false });
+  };
+
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Create New Event
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        gutterBottom
+        sx={{
+          fontWeight: 600,
+          background: 'linear-gradient(45deg, #2196f3 30%, #21CBF3 90%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+        }}
+      >
+        Создание нового события
       </Typography>
       <Card>
         <CardContent>
@@ -82,7 +108,7 @@ const AdminPanel = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Event Title"
+                  label="Название события"
                   name="title"
                   value={eventData.title}
                   onChange={handleChange}
@@ -92,7 +118,7 @@ const AdminPanel = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Description"
+                  label="Описание"
                   name="description"
                   value={eventData.description}
                   onChange={handleChange}
@@ -103,7 +129,7 @@ const AdminPanel = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <DateTimePicker
-                  label="Start Time"
+                  label="Время начала"
                   value={eventData.start_time}
                   onChange={(date) => handleDateChange(date, 'start_time')}
                   renderInput={(params) => <TextField {...params} fullWidth required />}
@@ -111,7 +137,7 @@ const AdminPanel = () => {
               </Grid>
               <Grid item xs={12} sm={6}>
                 <DateTimePicker
-                  label="End Time"
+                  label="Время окончания"
                   value={eventData.end_time}
                   onChange={(date) => handleDateChange(date, 'end_time')}
                   renderInput={(params) => <TextField {...params} fullWidth required />}
@@ -120,23 +146,23 @@ const AdminPanel = () => {
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Possible Outcomes (comma-separated)"
+                  label="Возможные исходы (через запятую)"
                   name="outcomes"
                   value={eventData.outcomes}
                   onChange={handleChange}
-                  helperText="Enter possible outcomes separated by commas"
                   required
+                  helperText="Например: Победа, Ничья, Поражение"
                 />
               </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Probabilities (JSON format)"
+                  label="Вероятности (в формате JSON)"
                   name="probabilities"
                   value={eventData.probabilities}
                   onChange={handleChange}
-                  helperText='Example: {"Outcome1": 50, "Outcome2": 50}'
                   required
+                  helperText='Например: {"Победа": 40, "Ничья": 30, "Поражение": 30}'
                 />
               </Grid>
               <Grid item xs={12}>
@@ -145,14 +171,43 @@ const AdminPanel = () => {
                   variant="contained"
                   color="primary"
                   fullWidth
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 2,
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    fontSize: '1.1rem',
+                    boxShadow: '0 4px 20px rgba(33, 150, 243, 0.3)',
+                    '&:hover': {
+                      boxShadow: '0 6px 25px rgba(33, 150, 243, 0.4)',
+                    },
+                  }}
                 >
-                  Create Event
+                  Создать событие
                 </Button>
               </Grid>
             </Grid>
           </form>
         </CardContent>
       </Card>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          sx={{ 
+            borderRadius: 2,
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+          }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };
