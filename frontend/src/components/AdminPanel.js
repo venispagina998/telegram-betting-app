@@ -115,10 +115,12 @@ const AdminPanel = () => {
       }
 
       // Формируем объект вероятностей
-      const probabilities = outcomes.reduce((acc, outcome) => {
-        acc[outcome.name] = parseInt(outcome.probability, 10);
-        return acc;
-      }, {});
+      const probabilities = {};
+      outcomes.forEach(outcome => {
+        if (outcome.name && outcome.probability) {
+          probabilities[String(outcome.name).trim()] = parseInt(outcome.probability, 10);
+        }
+      });
 
       console.log('Исходы до преобразования:', outcomes);
       console.log('Объект вероятностей:', probabilities);
@@ -134,13 +136,29 @@ const AdminPanel = () => {
 
       // Формируем данные для отправки
       const requestData = {
-        ...eventData,
-        created_by: userId,
-        outcomes: outcomes.map(o => String(o.name)),
-        probabilities: probabilities,
+        title: String(eventData.title).trim(),
+        description: String(eventData.description).trim(),
+        start_time: eventData.start_time.toISOString(),
+        end_time: eventData.end_time.toISOString(),
+        created_by: String(userId),
+        outcomes: outcomes
+          .filter(o => o.name)
+          .map(o => String(o.name).trim()),
+        probabilities: probabilities
       };
 
-      console.log('Подготовленные данные для отправки:', requestData);
+      console.log('Подготовленные данные для отправки:', {
+        ...requestData,
+        типы: {
+          title: typeof requestData.title,
+          description: typeof requestData.description,
+          start_time: typeof requestData.start_time,
+          end_time: typeof requestData.end_time,
+          created_by: typeof requestData.created_by,
+          outcomes: `array[${requestData.outcomes.length}]`,
+          probabilities: Object.entries(requestData.probabilities).map(([k, v]) => `${k}: ${typeof v}`)
+        }
+      });
       console.log('User ID:', userId);
       console.log('Исходы:', outcomes.map(o => o.name));
       console.log('Вероятности:', probabilities);
@@ -165,25 +183,29 @@ const AdminPanel = () => {
         });
       } catch (axiosError) {
         console.error('Ошибка axios:', axiosError);
-        console.error('Детали ответа:', axiosError.response?.data);
-        console.error('Статус ответа:', axiosError.response?.status);
+        if (axiosError.response?.data?.detail) {
+          console.error('Детали ошибки:', JSON.stringify(axiosError.response.data.detail, null, 2));
+          if (Array.isArray(axiosError.response.data.detail)) {
+            axiosError.response.data.detail.forEach((error, index) => {
+              console.error(`Ошибка ${index + 1}:`, {
+                путь: error.loc,
+                сообщение: error.msg,
+                тип: error.type
+              });
+            });
+          }
+        }
+        console.error('Отправленные данные:', JSON.stringify(requestData, null, 2));
         
         let errorMessage = 'Ошибка при создании события';
         if (axiosError.response?.data?.detail) {
-          // Handle array of validation errors
           if (Array.isArray(axiosError.response.data.detail)) {
-            errorMessage = axiosError.response.data.detail.map(err => err.msg).join(', ');
+            errorMessage = axiosError.response.data.detail
+              .map(err => `${err.loc.join('.')}: ${err.msg}`)
+              .join('\n');
           } else {
             errorMessage = axiosError.response.data.detail;
           }
-        } else if (axiosError.response?.data?.message) {
-          errorMessage = axiosError.response.data.message;
-        } else if (axiosError.message) {
-          errorMessage = axiosError.message;
-        } else if (axiosError.code === 'ECONNABORTED') {
-          errorMessage = 'Превышено время ожидания ответа от сервера';
-        } else if (!axiosError.response) {
-          errorMessage = 'Сервер недоступен. Проверьте подключение к интернету';
         }
 
         setSnackbar({
