@@ -44,8 +44,13 @@ const AdminPanel = () => {
     severity: 'success'
   });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
     try {
       console.log('Начало отправки формы');
       console.log('Данные события:', eventData);
@@ -98,6 +103,17 @@ const AdminPanel = () => {
         return;
       }
 
+      // Проверяем, что все вероятности положительные числа
+      if (outcomes.some(outcome => Number(outcome.probability) <= 0)) {
+        console.log('Ошибка: некорректные вероятности');
+        setSnackbar({
+          open: true,
+          message: 'Все вероятности должны быть положительными числами',
+          severity: 'error'
+        });
+        return;
+      }
+
       // Формируем объект вероятностей
       const probabilities = outcomes.reduce((acc, outcome) => {
         acc[outcome.name] = Number(outcome.probability);
@@ -145,6 +161,10 @@ const AdminPanel = () => {
           errorMessage = axiosError.response.data.message;
         } else if (axiosError.message) {
           errorMessage = axiosError.message;
+        } else if (axiosError.code === 'ECONNABORTED') {
+          errorMessage = 'Превышено время ожидания ответа от сервера';
+        } else if (!axiosError.response) {
+          errorMessage = 'Сервер недоступен. Проверьте подключение к интернету';
         }
 
         setSnackbar({
@@ -160,6 +180,8 @@ const AdminPanel = () => {
         message: 'Произошла ошибка при обработке формы',
         severity: 'error'
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -307,6 +329,7 @@ const AdminPanel = () => {
                   variant="contained"
                   color="primary"
                   fullWidth
+                  disabled={isSubmitting}
                   sx={{
                     py: 1.5,
                     borderRadius: 2,
@@ -319,7 +342,7 @@ const AdminPanel = () => {
                     },
                   }}
                 >
-                  Создать событие
+                  {isSubmitting ? 'Создание...' : 'Создать событие'}
                 </Button>
               </Grid>
             </Grid>
