@@ -120,16 +120,25 @@ const AdminPanel = () => {
         return acc;
       }, {});
 
+      // Получаем ID пользователя
+      let userId;
+      try {
+        userId = WebApp.initDataUnsafe.user.id;
+      } catch (error) {
+        console.log('Не удалось получить ID пользователя из Telegram, используем тестовый ID');
+        userId = 'test_user_123'; // Временное решение для тестирования
+      }
+
       // Формируем данные для отправки
       const requestData = {
         ...eventData,
-        created_by: WebApp.initDataUnsafe.user.id,
+        created_by: userId,
         outcomes: JSON.stringify(outcomes.map(o => o.name)),
         probabilities: JSON.stringify(probabilities),
       };
 
       console.log('Подготовленные данные для отправки:', requestData);
-      console.log('User ID:', WebApp.initDataUnsafe.user.id);
+      console.log('User ID:', userId);
 
       try {
         const response = await axios.post('/events/', requestData);
