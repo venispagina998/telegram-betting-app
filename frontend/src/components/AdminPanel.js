@@ -32,6 +32,12 @@ const AdminPanel = () => {
     probabilities: '',
   });
 
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  });
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
