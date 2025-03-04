@@ -143,7 +143,8 @@ const AdminPanel = () => {
         created_by: typeof userId === 'string' ? parseInt(userId, 10) : userId,
         outcomes: outcomes
           .filter(o => o.name)
-          .map(o => String(o.name).trim()),
+          .map(o => String(o.name).trim())
+          .join(','),
         probabilities: probabilities
       };
 
@@ -156,7 +157,7 @@ const AdminPanel = () => {
           start_time: typeof requestData.start_time,
           end_time: typeof requestData.end_time,
           created_by: typeof requestData.created_by,
-          outcomes: `array[${requestData.outcomes.length}] of strings`,
+          outcomes: typeof requestData.outcomes,
           probabilities: Object.entries(requestData.probabilities).map(([k, v]) => `${k}: ${typeof v}`)
         }
       });
