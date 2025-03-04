@@ -116,7 +116,7 @@ const AdminPanel = () => {
 
       // Формируем объект вероятностей
       const probabilities = outcomes.reduce((acc, outcome) => {
-        acc[outcome.name] = Number(outcome.probability);
+        acc[outcome.name] = parseInt(outcome.probability, 10);
         return acc;
       }, {});
 
@@ -136,7 +136,7 @@ const AdminPanel = () => {
       const requestData = {
         ...eventData,
         created_by: userId,
-        outcomes: outcomes.map(o => o.name),
+        outcomes: outcomes.map(o => String(o.name)),
         probabilities: probabilities,
       };
 
