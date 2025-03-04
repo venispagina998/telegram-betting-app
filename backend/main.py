@@ -6,11 +6,15 @@ import models
 import schemas
 from database import SessionLocal, engine
 from datetime import datetime
-from auth import verify_telegram_data
+# from auth import verify_telegram_data
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
+app = FastAPI(
+    title="Betting App API",
+    description="API для приложения виртуальных ставок",
+    version="1.0.0"
+)
 
 # CORS middleware configuration
 app.add_middleware(
@@ -29,11 +33,40 @@ def get_db():
     finally:
         db.close()
 
+# Временная функция для тестирования
+def get_test_user():
+    return {
+        'user_id': 1,
+        'first_name': 'Test',
+        'last_name': 'User',
+        'username': 'testuser',
+        'is_admin': True
+    }
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Добро пожаловать в API приложения виртуальных ставок",
+        "endpoints": {
+            "events": {
+                "list": "/events/",
+                "create": "/events/",
+                "get": "/events/{event_id}",
+                "results": "/events/{event_id}/results"
+            },
+            "bets": {
+                "create": "/bets/",
+                "user_bets": "/bets/{user_id}",
+                "event_user_bets": "/events/{event_id}/user-bets/{user_id}"
+            }
+        }
+    }
+
 @app.post("/events/", response_model=schemas.Event)
 def create_event(
     event: schemas.EventCreate,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     # Проверяем, является ли пользователь администратором
     if not user_data.get('is_admin'):
@@ -50,7 +83,7 @@ def create_event(
         end_time=event.end_time,
         outcomes=event.outcomes,
         probabilities=event.probabilities,
-        created_by=user_data['id']
+        created_by=user_data['user_id']
     )
     db.add(db_event)
     db.commit()
@@ -62,7 +95,7 @@ def read_events(
     skip: int = 0,
     limit: int = 100,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     events = db.query(models.Event).offset(skip).limit(limit).all()
     return events
@@ -71,7 +104,7 @@ def read_events(
 def create_bet(
     bet: schemas.BetCreate,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     # Проверяем, что пользователь делает ставку от своего имени
     if bet.user_id != user_data['user_id']:
@@ -94,7 +127,7 @@ def create_bet(
 def read_user_bets(
     user_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     # Проверяем, что пользователь запрашивает свои ставки
     if user_id != user_data['user_id']:
@@ -107,7 +140,7 @@ def read_user_bets(
 def get_event_results(
     event_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if not event:
@@ -132,7 +165,7 @@ def get_event_results(
 def read_event(
     event_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     event = db.query(models.Event).filter(models.Event.id == event_id).first()
     if not event:
@@ -144,7 +177,7 @@ def read_user_bets_for_event(
     event_id: int,
     user_id: int,
     db: Session = Depends(get_db),
-    user_data: dict = Depends(verify_telegram_data)
+    user_data: dict = Depends(get_test_user)
 ):
     # Проверяем, что пользователь запрашивает свои ставки
     if user_id != user_data['user_id']:
