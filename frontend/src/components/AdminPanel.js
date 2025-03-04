@@ -47,8 +47,13 @@ const AdminPanel = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      console.log('Начало отправки формы');
+      console.log('Данные события:', eventData);
+      console.log('Исходы:', outcomes);
+
       // Проверяем, что все поля заполнены
       if (!eventData.title || !eventData.description) {
+        console.log('Ошибка: не заполнены основные поля');
         setSnackbar({
           open: true,
           message: 'Пожалуйста, заполните название и описание события',
@@ -59,6 +64,7 @@ const AdminPanel = () => {
 
       // Проверяем, что время окончания позже времени начала
       if (eventData.end_time <= eventData.start_time) {
+        console.log('Ошибка: некорректное время');
         setSnackbar({
           open: true,
           message: 'Время окончания должно быть позже времени начала',
@@ -69,6 +75,7 @@ const AdminPanel = () => {
 
       // Проверяем, что все исходы и вероятности заполнены
       if (outcomes.some(outcome => !outcome.name || !outcome.probability)) {
+        console.log('Ошибка: не заполнены исходы или вероятности');
         setSnackbar({
           open: true,
           message: 'Пожалуйста, заполните все исходы и их вероятности',
@@ -79,7 +86,10 @@ const AdminPanel = () => {
 
       // Проверяем, что сумма вероятностей равна 100
       const totalProbability = outcomes.reduce((sum, outcome) => sum + Number(outcome.probability), 0);
+      console.log('Общая вероятность:', totalProbability);
+      
       if (totalProbability !== 100) {
+        console.log('Ошибка: сумма вероятностей не равна 100%');
         setSnackbar({
           open: true,
           message: 'Сумма вероятностей должна быть равна 100%',
@@ -94,50 +104,60 @@ const AdminPanel = () => {
         return acc;
       }, {});
 
-      console.log('Отправка данных:', {
+      // Формируем данные для отправки
+      const requestData = {
         ...eventData,
         created_by: WebApp.initDataUnsafe.user.id,
         outcomes: JSON.stringify(outcomes.map(o => o.name)),
         probabilities: JSON.stringify(probabilities),
-      });
+      };
 
-      const response = await axios.post('/events/', {
-        ...eventData,
-        created_by: WebApp.initDataUnsafe.user.id,
-        outcomes: JSON.stringify(outcomes.map(o => o.name)),
-        probabilities: JSON.stringify(probabilities),
-      });
+      console.log('Подготовленные данные для отправки:', requestData);
+      console.log('User ID:', WebApp.initDataUnsafe.user.id);
 
-      console.log('Ответ сервера:', response.data);
-      
-      // Сброс формы
-      setEventData({
-        title: '',
-        description: '',
-        start_time: new Date(),
-        end_time: new Date(),
-      });
-      setOutcomes([{ name: '', probability: '' }]);
+      try {
+        const response = await axios.post('/events/', requestData);
+        console.log('Ответ сервера:', response.data);
+        
+        // Сброс формы
+        setEventData({
+          title: '',
+          description: '',
+          start_time: new Date(),
+          end_time: new Date(),
+        });
+        setOutcomes([{ name: '', probability: '' }]);
 
-      setSnackbar({
-        open: true,
-        message: 'Событие успешно создано',
-        severity: 'success'
-      });
-    } catch (error) {
-      console.error('Ошибка при создании события:', error);
-      console.error('Детали ошибки:', error.response?.data);
-      
-      let errorMessage = 'Ошибка при создании события';
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        setSnackbar({
+          open: true,
+          message: 'Событие успешно создано',
+          severity: 'success'
+        });
+      } catch (axiosError) {
+        console.error('Ошибка axios:', axiosError);
+        console.error('Детали ответа:', axiosError.response?.data);
+        console.error('Статус ответа:', axiosError.response?.status);
+        
+        let errorMessage = 'Ошибка при создании события';
+        if (axiosError.response?.data?.detail) {
+          errorMessage = axiosError.response.data.detail;
+        } else if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        } else if (axiosError.message) {
+          errorMessage = axiosError.message;
+        }
+
+        setSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: 'error'
+        });
       }
-
+    } catch (error) {
+      console.error('Общая ошибка:', error);
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message: 'Произошла ошибка при обработке формы',
         severity: 'error'
       });
     }
