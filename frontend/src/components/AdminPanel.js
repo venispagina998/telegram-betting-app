@@ -120,6 +120,9 @@ const AdminPanel = () => {
         return acc;
       }, {});
 
+      console.log('Исходы до преобразования:', outcomes);
+      console.log('Объект вероятностей:', probabilities);
+
       // Получаем ID пользователя
       let userId;
       try {
@@ -139,6 +142,8 @@ const AdminPanel = () => {
 
       console.log('Подготовленные данные для отправки:', requestData);
       console.log('User ID:', userId);
+      console.log('Исходы (JSON):', JSON.stringify(outcomes.map(o => o.name)));
+      console.log('Вероятности (JSON):', JSON.stringify(probabilities));
 
       try {
         const response = await axios.post('/events/', requestData);
@@ -165,7 +170,12 @@ const AdminPanel = () => {
         
         let errorMessage = 'Ошибка при создании события';
         if (axiosError.response?.data?.detail) {
-          errorMessage = axiosError.response.data.detail;
+          // Handle array of validation errors
+          if (Array.isArray(axiosError.response.data.detail)) {
+            errorMessage = axiosError.response.data.detail.map(err => err.msg).join(', ');
+          } else {
+            errorMessage = axiosError.response.data.detail;
+          }
         } else if (axiosError.response?.data?.message) {
           errorMessage = axiosError.response.data.message;
         } else if (axiosError.message) {
