@@ -28,14 +28,15 @@ import WebApp from '@twa-dev/sdk';
 
 const AdminPanel = () => {
   const [eventData, setEventData] = useState({
-    title: '',
-    description: '',
+    title: 'Сделаю приложение или нет',
+    description: 'Джас да или нет',
     start_time: new Date(),
-    end_time: new Date(),
+    end_time: new Date(new Date().setDate(new Date().getDate() + 4)),
   });
 
   const [outcomes, setOutcomes] = useState([
-    { name: '', probability: '' }
+    { name: 'Да', probability: '50' },
+    { name: 'Нет', probability: '50' }
   ]);
 
   const [snackbar, setSnackbar] = useState({
