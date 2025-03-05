@@ -141,19 +141,18 @@ const AdminPanel = () => {
 
       // Формируем данные для отправки
       const requestData = {
-        title: String(eventData.title).trim(),
-        description: String(eventData.description).trim(),
-        start_time: eventData.start_time.toISOString(),
-        end_time: eventData.end_time.toISOString(),
-        created_by: userId,
-        outcomes: outcomes
-          .filter(o => o.name)
-          .map(o => String(o.name).trim())
-          .join(','),
-        probabilities
+        title: "Тестовое событие",
+        description: "Описание тестового события",
+        start_time: new Date().toISOString(),
+        end_time: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+        created_by: 123,
+        outcomes: "Да,Нет",
+        probabilities: {
+          "Да": 50,
+          "Нет": 50
+        }
       };
 
-      // Подробное логирование
       console.log('=== Отправляемые данные ===');
       Object.entries(requestData).forEach(([key, value]) => {
         console.log(`${key}:`, value, `(${typeof value})`);
@@ -164,6 +163,12 @@ const AdminPanel = () => {
         const response = await axios.post('/events/', requestData);
         console.log('Успешный ответ:', response.data);
         
+        setSnackbar({
+          open: true,
+          message: 'Событие успешно создано',
+          severity: 'success'
+        });
+
         // Сброс формы
         setEventData({
           title: '',
@@ -172,41 +177,11 @@ const AdminPanel = () => {
           end_time: new Date(),
         });
         setOutcomes([{ name: '', probability: '' }]);
-
-        setSnackbar({
-          open: true,
-          message: 'Событие успешно создано',
-          severity: 'success'
-        });
       } catch (axiosError) {
         console.error('=== Ошибка при отправке запроса ===');
         console.error('Статус ошибки:', axiosError.response?.status);
         console.error('Данные ошибки:', axiosError.response?.data);
         
-        if (axiosError.response?.status === 500) {
-          console.error('Серверная ошибка:', axiosError.response?.data);
-          console.error('Отправленные данные:', JSON.stringify(requestData, null, 2));
-          setSnackbar({
-            open: true,
-            message: 'Произошла ошибка на сервере. Пожалуйста, проверьте формат данных и попробуйте снова.',
-            severity: 'error'
-          });
-          return;
-        }
-
-        if (axiosError.response?.data?.detail) {
-          console.error('Детали ошибки:', JSON.stringify(axiosError.response.data.detail, null, 2));
-          if (Array.isArray(axiosError.response.data.detail)) {
-            axiosError.response.data.detail.forEach((error, index) => {
-              console.error(`Ошибка ${index + 1}:`, {
-                путь: error.loc,
-                сообщение: error.msg,
-                тип: error.type
-              });
-            });
-          }
-        }
-
         let errorMessage = 'Ошибка при создании события';
         if (axiosError.response?.data?.detail) {
           if (Array.isArray(axiosError.response.data.detail)) {
