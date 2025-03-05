@@ -24,8 +24,7 @@ A Telegram Mini App that allows administrators to create events and users to pla
 1. Create a virtual environment and activate it:
 ```bash
 python -m venv venv
-source venv/bin/activate  # На Windows: venv\Scripts\activate
-```
+source venv/bin/activate  
 
 2. Install dependencies:
 ```bash
