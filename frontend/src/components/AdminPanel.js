@@ -53,93 +53,7 @@ const AdminPanel = () => {
 
     setIsSubmitting(true);
     try {
-      console.log('Начало отправки формы');
-      console.log('Данные события:', eventData);
-      console.log('Исходы:', outcomes);
-
-      // Проверяем, что все поля заполнены
-      if (!eventData.title || !eventData.description) {
-        console.log('Ошибка: не заполнены основные поля');
-        setSnackbar({
-          open: true,
-          message: 'Пожалуйста, заполните название и описание события',
-          severity: 'error'
-        });
-        return;
-      }
-
-      // Проверяем, что время окончания позже времени начала
-      if (eventData.end_time <= eventData.start_time) {
-        console.log('Ошибка: некорректное время');
-        setSnackbar({
-          open: true,
-          message: 'Время окончания должно быть позже времени начала',
-          severity: 'error'
-        });
-        return;
-      }
-
-      // Проверяем, что все исходы и вероятности заполнены
-      if (outcomes.some(outcome => !outcome.name || !outcome.probability)) {
-        console.log('Ошибка: не заполнены исходы или вероятности');
-        setSnackbar({
-          open: true,
-          message: 'Пожалуйста, заполните все исходы и их вероятности',
-          severity: 'error'
-        });
-        return;
-      }
-
-      // Проверяем, что сумма вероятностей равна 100
-      const totalProbability = outcomes.reduce((sum, outcome) => sum + Number(outcome.probability), 0);
-      console.log('Общая вероятность:', totalProbability);
-      
-      if (totalProbability !== 100) {
-        console.log('Ошибка: сумма вероятностей не равна 100%');
-        setSnackbar({
-          open: true,
-          message: 'Сумма вероятностей должна быть равна 100%',
-          severity: 'error'
-        });
-        return;
-      }
-
-      // Проверяем, что все вероятности положительные числа
-      if (outcomes.some(outcome => Number(outcome.probability) <= 0)) {
-        console.log('Ошибка: некорректные вероятности');
-        setSnackbar({
-          open: true,
-          message: 'Все вероятности должны быть положительными числами',
-          severity: 'error'
-        });
-        return;
-      }
-
-      // Формируем объект вероятностей
-      const probabilities = {};
-      outcomes.forEach(outcome => {
-        if (outcome.name && outcome.probability) {
-          const name = String(outcome.name).trim();
-          const probability = parseInt(outcome.probability, 10);
-          if (!isNaN(probability)) {
-            probabilities[name] = probability;
-          }
-        }
-      });
-
-      console.log('Исходы до преобразования:', outcomes);
-      console.log('Объект вероятностей:', probabilities);
-
-      // Получаем ID пользователя
-      let userId;
-      try {
-        userId = WebApp.initDataUnsafe.user.id;
-      } catch (error) {
-        console.log('Не удалось получить ID пользователя из Telegram, используем тестовый ID');
-        userId = 123;
-      }
-
-      // Формируем данные для отправки
+      // Тестовые данные для отправки
       const requestData = {
         title: "Тестовое событие",
         description: "Описание тестового события",
@@ -159,53 +73,52 @@ const AdminPanel = () => {
       });
       console.log('JSON данных:', JSON.stringify(requestData, null, 2));
 
-      try {
-        const response = await axios.post('/events/', requestData);
-        console.log('Успешный ответ:', response.data);
-        
-        setSnackbar({
-          open: true,
-          message: 'Событие успешно создано',
-          severity: 'success'
-        });
+      const response = await axios.post('/events/', requestData);
+      console.log('Успешный ответ:', response.data);
+      
+      setSnackbar({
+        open: true,
+        message: 'Событие успешно создано',
+        severity: 'success'
+      });
 
-        // Сброс формы
-        setEventData({
-          title: '',
-          description: '',
-          start_time: new Date(),
-          end_time: new Date(),
-        });
-        setOutcomes([{ name: '', probability: '' }]);
-      } catch (axiosError) {
-        console.error('=== Ошибка при отправке запроса ===');
-        console.error('Статус ошибки:', axiosError.response?.status);
-        console.error('Данные ошибки:', axiosError.response?.data);
+      // Сброс формы
+      setEventData({
+        title: '',
+        description: '',
+        start_time: new Date(),
+        end_time: new Date(),
+      });
+      setOutcomes([{ name: '', probability: '' }]);
+    } catch (error) {
+      console.error('=== Ошибка при отправке запроса ===');
+      if (error.response) {
+        console.error('Статус ошибки:', error.response.status);
+        console.error('Данные ошибки:', error.response.data);
         
         let errorMessage = 'Ошибка при создании события';
-        if (axiosError.response?.data?.detail) {
-          if (Array.isArray(axiosError.response.data.detail)) {
-            errorMessage = axiosError.response.data.detail
+        if (error.response.data?.detail) {
+          if (Array.isArray(error.response.data.detail)) {
+            errorMessage = error.response.data.detail
               .map(err => `${err.loc.join('.')}: ${err.msg}`)
               .join('\n');
           } else {
-            errorMessage = axiosError.response.data.detail;
+            errorMessage = error.response.data.detail;
           }
         }
-
         setSnackbar({
           open: true,
           message: errorMessage,
           severity: 'error'
         });
+      } else {
+        console.error('Общая ошибка:', error);
+        setSnackbar({
+          open: true,
+          message: 'Произошла ошибка при создании события',
+          severity: 'error'
+        });
       }
-    } catch (error) {
-      console.error('Общая ошибка:', error);
-      setSnackbar({
-        open: true,
-        message: 'Произошла ошибка при обработке формы',
-        severity: 'error'
-      });
     } finally {
       setIsSubmitting(false);
     }
