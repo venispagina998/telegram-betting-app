@@ -1,0 +1,10 @@
+[33mcommit db8968de16e87a6c216cfb8c87fb079e79f6f129[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: venispagina998 <your.email@example.com>
+Date:   Tue Mar 4 14:33:39 2025 +0300
+
+    Add GitHub Actions workflows for testing and deployment
+
+ .github/workflows/backend-tests.yml  | 39 [32m++++++++++++++++++++++++++++++++++++[m
+ .github/workflows/deploy.yml         | 32 [32m+++++++++++++++++++++++++++++[m
+ .github/workflows/frontend-tests.yml | 35 [32m++++++++++++++++++++++++++++++++[m
+ 3 files changed, 106 insertions(+)

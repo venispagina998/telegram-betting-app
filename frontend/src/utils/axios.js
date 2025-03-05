@@ -1,4 +1,4 @@
-import axios from 'axios';
+body.outcomes: str type expected body.created_by: value is not a valid integerimport axios from 'axios';
 import WebApp from '@twa-dev/sdk';
 
 // Создаем экземпляр axios с базовой конфигурацией
